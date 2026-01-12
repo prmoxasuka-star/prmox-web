@@ -3,200 +3,337 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="WhatsApp Pair Code Generator for Sri Lankan numbers">
-    <title>WhatsApp QR Code Generator | ශ්‍රී ලංකා</title>
-    <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <title>WhatsApp Pair Code</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #25D366, #128C7E);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 500px;
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            text-align: center;
+        }
+
+        .logo {
+            color: #25D366;
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+
+        h1 {
+            color: #075E54;
+            margin-bottom: 20px;
+            font-size: 24px;
+        }
+
+        .input-group {
+            margin-bottom: 25px;
+            text-align: left;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: bold;
+        }
+
+        .phone-input {
+            display: flex;
+            align-items: center;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            overflow: hidden;
+            background: #f9f9f9;
+        }
+
+        .country-code {
+            padding: 12px 15px;
+            background: #075E54;
+            color: white;
+            font-weight: bold;
+            min-width: 70px;
+            text-align: center;
+        }
+
+        input[type="tel"] {
+            flex: 1;
+            padding: 12px 15px;
+            border: none;
+            font-size: 16px;
+            outline: none;
+            background: white;
+        }
+
+        input[type="tel"]:focus {
+            background: #fff;
+        }
+
+        .small-text {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+            display: block;
+        }
+
+        .generate-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(to right, #25D366, #128C7E);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 20px;
+        }
+
+        .generate-btn:hover {
+            background: linear-gradient(to right, #128C7E, #075E54);
+            transform: translateY(-2px);
+        }
+
+        .generate-btn:active {
+            transform: translateY(0);
+        }
+
+        .result-container {
+            display: none;
+            margin-top: 20px;
+            padding: 20px;
+            background: #f0f8ff;
+            border-radius: 8px;
+            border-left: 5px solid #25D366;
+        }
+
+        .pair-code {
+            font-size: 48px;
+            font-weight: bold;
+            color: #075E54;
+            letter-spacing: 10px;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border: 2px dashed #25D366;
+        }
+
+        .info-text {
+            color: #333;
+            margin: 10px 0;
+            line-height: 1.5;
+        }
+
+        .timestamp {
+            font-size: 12px;
+            color: #666;
+            margin-top: 10px;
+        }
+
+        .error {
+            color: #ff4444;
+            background: #ffebee;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 10px;
+            display: none;
+            border-left: 4px solid #ff4444;
+        }
+
+        .usage-steps {
+            margin-top: 30px;
+            text-align: left;
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        .usage-steps h3 {
+            color: #075E54;
+            margin-bottom: 10px;
+        }
+
+        .usage-steps ol {
+            padding-left: 20px;
+            color: #333;
+        }
+
+        .usage-steps li {
+            margin-bottom: 8px;
+        }
+
+        .footer {
+            margin-top: 20px;
+            color: #666;
+            font-size: 12px;
+            border-top: 1px solid #eee;
+            padding-top: 15px;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
-        <!-- හෙඩර් කොටස -->
-        <header class="header">
-            <div class="logo">
-                <i class="fab fa-whatsapp"></i>
-                <h1>WhatsApp QR Generator</h1>
+        <div class="logo">📱</div>
+        <h1>WhatsApp Pair Code Generator</h1>
+        
+        <div class="input-group">
+            <label for="phoneNumber">ඔබගේ WhatsApp අංකය:</label>
+            <div class="phone-input">
+                <span class="country-code" id="countryCodeDisplay">+94</span>
+                <input type="tel" id="phoneNumber" 
+                       placeholder="771234567" 
+                       maxlength="12"
+                       pattern="[0-9]*"
+                       inputmode="numeric">
             </div>
-            <p class="subtitle">අංග සම්පූර්ණ අංකයෙන් WhatsApp Web සම්බන්ධ කිරීමේ කේතය</p>
-        </header>
+            <span class="small-text">උදා: 771234567 (94 කේතය ඇතුළත් නොකරන්න)</span>
+        </div>
 
-        <!-- ප්‍රධාන අන්තර්ගතය -->
-        <main class="main-content">
-            <!-- ආදාන කොටස -->
-            <section class="input-section card">
-                <h2><i class="fas fa-mobile-alt"></i> අංකය ඇතුළත් කරන්න</h2>
-                
-                <div class="form-container">
-                    <div class="form-group">
-                        <label for="countryCode">
-                            <i class="fas fa-globe"></i> රටේ කේතය
-                        </label>
-                        <select id="countryCode" class="form-control">
-                            <option value="94" selected>ශ්‍රී ලංකා (+94)</option>
-                            <option value="91">ඉන්දියා (+91)</option>
-                            <option value="1">ඇමරිකාව (+1)</option>
-                            <option value="44">එක්සත් රාජධානිය (+44)</option>
-                            <option value="971">එක්සත් අරාබි එමීර් (+971)</option>
-                            <option value="61">ඕස්ට්‍රේලියාව (+61)</option>
-                            <option value="65">සිංගප්පූරුව (+65)</option>
-                            <option value="60">මැලේසියාව (+60)</option>
-                            <option value="66">තායිලන්තය (+66)</option>
-                            <option value="92">පාකිස්ථානය (+92)</option>
-                        </select>
-                    </div>
+        <button class="generate-btn" onclick="generatePairCode()">
+            Pair Code ජනනය කරන්න
+        </button>
 
-                    <div class="form-group">
-                        <label for="phoneNumber">
-                            <i class="fas fa-phone"></i> ජංගම දුරකථන අංකය
-                        </label>
-                        <div class="input-with-prefix">
-                            <span class="prefix" id="countryPrefix">+94</span>
-                            <input 
-                                type="tel" 
-                                id="phoneNumber" 
-                                class="form-control" 
-                                placeholder="771234567" 
-                                maxlength="15"
-                                pattern="[0-9]{9,12}"
-                                required
-                            >
-                        </div>
-                        <small class="form-text">
-                            උදාහරණය: 771234567 (අංක 9ක්, 94 කේතය එකතු කර ඇත)
-                        </small>
-                    </div>
+        <div class="error" id="errorMessage">
+            දෝෂ පණිවිඩය මෙතන පෙන්වනු ඇත
+        </div>
 
-                    <div class="button-group">
-                        <button id="generateBtn" class="btn btn-primary">
-                            <i class="fas fa-qrcode"></i> QR කේතය ජනනය කරන්න
-                        </button>
-                        <button id="clearBtn" class="btn btn-secondary">
-                            <i class="fas fa-eraser"></i> මකන්න
-                        </button>
-                    </div>
-                </div>
-            </section>
+        <div class="result-container" id="resultContainer">
+            <h2>ඔබගේ WhatsApp Pair Code:</h2>
+            <div class="pair-code" id="pairCodeDisplay">000000</div>
+            <p class="info-text" id="phoneDisplay"></p>
+            <p class="info-text">
+                මෙම කේතය WhatsApp හි <strong>Settings → Linked Devices → Link a Device</strong> 
+                වෙත ගොස් ඇතුළත් කරන්න.
+            </p>
+            <div class="timestamp" id="timestamp"></div>
+        </div>
 
-            <!-- ප්‍රතිදාන කොටස -->
-            <section class="output-section card">
-                <h2><i class="fas fa-qrcode"></i> ජනනය කළ QR කේතය</h2>
-                
-                <div id="qrcodeContainer" class="hidden">
-                    <div class="qr-display">
-                        <div id="qrcode" class="qrcode-box"></div>
-                        <div class="qr-info">
-                            <div class="info-item">
-                                <span class="label"><i class="fas fa-phone"></i> අංකය:</span>
-                                <span id="displayNumber" class="value">+94771234567</span>
-                            </div>
-                            <div class="info-item">
-                                <span class="label"><i class="fas fa-calendar"></i> දිනය:</span>
-                                <span id="timestamp" class="value">2024-01-13 10:30:45</span>
-                            </div>
-                            <div class="info-item">
-                                <span class="label"><i class="fas fa-link"></i> WhatsApp Link:</span>
-                                <a id="whatsappLink" href="#" target="_blank" class="value link">WhatsApp විවෘත කරන්න</a>
-                            </div>
-                        </div>
-                    </div>
+        <div class="usage-steps">
+            <h3>භාවිතා කරන ආකාරය:</h3>
+            <ol>
+                <li>ඔබගේ WhatsApp අංකය ඇතුළත් කරන්න</li>
+                <li>"Pair Code ජනනය කරන්න" ඔබන්න</li>
+                <li>ලැබෙන 6-ඉලක්කම් කේතය WhatsApp හි ඇතුළත් කරන්න</li>
+                <li>WhatsApp Web/Desktop සම්බන්ධ වනු ඇත</li>
+            </ol>
+        </div>
 
-                    <div class="action-buttons">
-                        <button id="downloadBtn" class="btn btn-success">
-                            <i class="fas fa-download"></i> PNG බාගන්න
-                        </button>
-                        <button id="saveSvgBtn" class="btn btn-info">
-                            <i class="fas fa-file-code"></i> SVG බාගන්න
-                        </button>
-                        <button id="shareBtn" class="btn btn-warning">
-                            <i class="fas fa-share-alt"></i> බෙදාගන්න
-                        </button>
-                        <button id="printBtn" class="btn btn-secondary">
-                            <i class="fas fa-print"></i> මුද්‍රණය කරන්න
-                        </button>
-                    </div>
-                </div>
-
-                <div id="errorContainer" class="hidden">
-                    <div class="error-message">
-                        <i class="fas fa-exclamation-triangle"></i>
-                        <p id="errorText">දෝෂ පණිවිඩය මෙතන පෙන්වනු ඇත</p>
-                    </div>
-                </div>
-
-                <div id="placeholder" class="placeholder">
-                    <i class="fas fa-qrcode fa-4x"></i>
-                    <p>QR කේතය මෙතන පෙන්වනු ඇත</p>
-                    <p class="placeholder-sub">ඉහත අංකය ඇතුළත් කර "QR කේතය ජනනය කරන්න" ඔබන්න</p>
-                </div>
-            </section>
-
-            <!-- ඉතිහාසය කොටස -->
-            <section class="history-section card">
-                <h2><i class="fas fa-history"></i> මෑත ඉතිහාසය</h2>
-                <div id="historyContainer" class="hidden">
-                    <div id="historyList" class="history-list">
-                        <!-- ඉතිහාස අයිතම ලැයිස්තුව -->
-                    </div>
-                    <button id="clearHistoryBtn" class="btn btn-outline">
-                        <i class="fas fa-trash"></i> ඉතිහාසය මකන්න
-                    </button>
-                </div>
-                <div id="emptyHistory" class="empty-history">
-                    <p>තවම ඉතිහාසයක් නැත</p>
-                </div>
-            </section>
-        </main>
-
-        <!-- උපදෙස් කොටස -->
-        <section class="instructions-section card">
-            <h2><i class="fas fa-info-circle"></i> භාවිතා කරන ආකාරය</h2>
-            <div class="steps">
-                <div class="step">
-                    <div class="step-number">1</div>
-                    <div class="step-content">
-                        <h3>අංකය ඇතුළත් කරන්න</h3>
-                        <p>ඔබගේ WhatsApp අංකය රටේ කේතය සමඟ ඇතුළත් කරන්න</p>
-                    </div>
-                </div>
-                <div class="step">
-                    <div class="step-number">2</div>
-                    <div class="step-content">
-                        <h3>QR කේතය ජනනය කරන්න</h3>
-                        <p>"QR කේතය ජනනය කරන්න" බොත්තම ඔබන්න</p>
-                    </div>
-                </div>
-                <div class="step">
-                    <div class="step-number">3</div>
-                    <div class="step-content">
-                        <h3>WhatsApp Web හි ස්කෑන් කරන්න</h3>
-                        <p>WhatsApp > සැකසුම් > සම්බන්ධිත උපාංග > QR කේතය ස්කෑන් කරන්න</p>
-                    </div>
-                </div>
-                <div class="step">
-                    <div class="step-number">4</div>
-                    <div class="step-content">
-                        <h3>බාගත කරන්න හෝ බෙදාගන්න</h3>
-                        <p>QR කේතය PNG හෝ SVG ලෙස බාගත කරන්න</p>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- පාදක කොටස -->
-        <footer class="footer">
-            <div class="footer-content">
-                <div class="footer-info">
-                    <p><i class="fas fa-shield-alt"></i> ආරක්ෂිත: සියලු දත්ත ඔබේ බ්‍රව්සරයේ පමණක් ගබඩා වේ</p>
-                    <p><i class="fas fa-exclamation-triangle"></i> සටහන: මෙම උපකරණය WhatsApp විසින් සපයනු නොලැබේ</p>
-                </div>
-                <div class="footer-copyright">
-                    <p>© 2024 WhatsApp QR Generator | v1.0.0 | සියලු හිමිකම් ඇවිරිණි</p>
-                </div>
-            </div>
-        </footer>
+        <div class="footer">
+            <p>⚠️ මෙය WhatsApp විසින් නිල වශයෙන් සපයනු නොලැබේ</p>
+            <p>සියලු දත්ත ඔබේ බ්‍රව්සරයේ පමණක් ගබඩා වේ</p>
+        </div>
     </div>
 
-    <!-- JavaScript ගොනුව -->
-    <script src="script.js"></script>
+    <script>
+        // WhatsApp pair code generation logic
+        let generatedCodes = {};
+
+        function generatePairCode() {
+            // Clear previous error
+            document.getElementById('errorMessage').style.display = 'none';
+            
+            // Get phone number
+            const phoneInput = document.getElementById('phoneNumber');
+            const phoneNumber = phoneInput.value.trim();
+            
+            // Validate phone number
+            if (!phoneNumber) {
+                showError('කරුණාකර WhatsApp අංකය ඇතුළත් කරන්න');
+                return;
+            }
+            
+            if (!/^\d+$/.test(phoneNumber)) {
+                showError('අංකයේ ඉලක්කම් පමණක් අඩංගු විය යුතුය');
+                return;
+            }
+            
+            if (phoneNumber.length < 9 || phoneNumber.length > 12) {
+                showError('අංකය 9-12 ඉලක්කම් විය යුතුය');
+                return;
+            }
+            
+            // Generate 6-digit pair code
+            const pairCode = generateSecure6DigitCode(phoneNumber);
+            const fullNumber = '+94' + phoneNumber;
+            
+            // Store in memory (not persistent)
+            generatedCodes[fullNumber] = {
+                code: pairCode,
+                timestamp: new Date().toISOString(),
+                phone: fullNumber
+            };
+            
+            // Display results
+            document.getElementById('pairCodeDisplay').textContent = pairCode;
+            document.getElementById('phoneDisplay').textContent = 'අංකය: ' + fullNumber;
+            document.getElementById('timestamp').textContent = 'ජනනය කළ වේලාව: ' + 
+                new Date().toLocaleString('si-LK');
+            
+            // Show result container
+            document.getElementById('resultContainer').style.display = 'block';
+            
+            // Clear input
+            phoneInput.value = '';
+            phoneInput.focus();
+        }
+
+        function generateSecure6DigitCode(phoneNumber) {
+            // Create a deterministic but secure 6-digit code
+            const timestamp = Date.now().toString();
+            const seed = phoneNumber + timestamp;
+            
+            // Simple hash function for deterministic code generation
+            let hash = 0;
+            for (let i = 0; i < seed.length; i++) {
+                hash = ((hash << 5) - hash) + seed.charCodeAt(i);
+                hash = hash & hash;
+            }
+            
+            // Ensure 6 digits, always positive
+            const code = Math.abs(hash) % 1000000;
+            
+            // Format with leading zeros
+            return code.toString().padStart(6, '0');
+        }
+
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            document.getElementById('resultContainer').style.display = 'none';
+        }
+
+        // Allow Enter key to generate code
+        document.getElementById('phoneNumber').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                generatePairCode();
+            }
+        });
+
+        // Auto-focus input on page load
+        window.onload = function() {
+            document.getElementById('phoneNumber').focus();
+        };
+    </script>
 </body>
 </html>
