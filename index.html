@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WhatsApp Pair Code Generator</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📱 WhatsApp Pair Code Generator</h1>
+            <p>ඔබගේ අංග සම්පූර්ණ අංකය ඇතුළත් කර WhatsApp Web සම්බන්ධ කිරීමේ කේතය ලබා ගන්න</p>
+        </header>
+
+        <div class="main-content">
+            <div class="input-section">
+                <div class="form-group">
+                    <label for="phoneNumber">අංග සම්පූර්ණ අංකය:</label>
+                    <input type="tel" id="phoneNumber" placeholder="947XXXXXXXX" pattern="[0-9]{10,12}" required>
+                    <small>උදාහරණය: 94712345678 (94 දෙස්වන කේතය + අංක 9ක්)</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="countryCode">රටේ කේතය:</label>
+                    <select id="countryCode">
+                        <option value="94">ශ්‍රී ලංකාව (+94)</option>
+                        <option value="91">ඉන්දියාව (+91)</option>
+                        <option value="1">ඇමරිකාව (+1)</option>
+                        <option value="44">එක්සත් රාජධානිය (+44)</option>
+                        <option value="971">එක්සත් අරාබි එමීර් (+971)</option>
+                        <option value="61">ඕස්ට්‍රේලියාව (+61)</option>
+                    </select>
+                </div>
+
+                <button id="generateBtn" class="btn-primary">කේතය ජනනය කරන්න</button>
+                <button id="clearBtn" class="btn-secondary">මකන්න</button>
+            </div>
+
+            <div class="output-section">
+                <div id="qrcodeContainer" class="hidden">
+                    <h3>WhatsApp Pair QR Code</h3>
+                    <div id="qrcode"></div>
+                    <div class="code-info">
+                        <p><strong>අංකය:</strong> <span id="displayNumber"></span></p>
+                        <p><strong>ජනනය කළ වේලාව:</strong> <span id="timestamp"></span></p>
+                        <button id="downloadBtn" class="btn-primary">QR Code බාගන්න</button>
+                        <button id="shareBtn" class="btn-secondary">බෙදාගන්න</button>
+                    </div>
+                </div>
+
+                <div id="errorContainer" class="hidden">
+                    <div class="error-message">
+                        <p id="errorText"></p>
+                    </div>
+                </div>
+
+                <div id="historyContainer" class="hidden">
+                    <h3>යාවත්කාලීන ඉතිහාසය</h3>
+                    <div id="historyList"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="instructions">
+            <h3>✍️ උපදෙස්:</h3>
+            <ol>
+                <li>ඔබගේ අංග සම්පූර්ණ WhatsApp අංකය ඇතුළත් කරන්න</li>
+                <li>"කේතය ජනනය කරන්න" බොත්තම ඔබන්න</li>
+                <li>QR කේතය WhatsApp Web හි Scan කරන්න</li>
+                <li>අවශ්‍ය නම් QR කේතය බාගන්න හෝ බෙදාගන්න</li>
+            </ol>
+        </div>
+
+        <footer>
+            <p>© 2024 WhatsApp Pair Code Generator | ආරක්ෂිතව භාවිතා කරන්න</p>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
