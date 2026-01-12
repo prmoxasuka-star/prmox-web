@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WhatsApp Pair Code System</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #128C7E, #075E54);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 500px;
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .logo {
+            font-size: 48px;
+            color: #25D366;
+            margin-bottom: 10px;
+        }
+
+        h1 {
+            color: #075E54;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        input {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #25D366;
+            box-shadow: 0 0 0 3px rgba(37, 211, 102, 0.1);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(to right, #25D366, #128C7E);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 10px;
+        }
+
+        .btn:hover {
+            background: linear-gradient(to right, #128C7E, #075E54);
+            transform: translateY(-2px);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .qr-container {
+            display: none;
+            text-align: center;
+            margin: 30px 0;
+            padding: 20px;
+            border: 2px dashed #25D366;
+            border-radius: 10px;
+            background: #f9f9f9;
+        }
+
+        #qrCodeImage {
+            max-width: 250px;
+            height: auto;
+            margin: 15px 0;
+            padding: 10px;
+            background: white;
+            border-radius: 5px;
+        }
+
+        .status-container {
+            display: none;
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .status-success {
+            background: #d4edda;
+            color: #155724;
+            border-left: 5px solid #28a745;
+        }
+
+        .status-waiting {
+            background: #fff3cd;
+            color: #856404;
+            border-left: 5px solid #ffc107;
+        }
+
+        .status-error {
+            background: #f8d7da;
+            color: #721c24;
+            border-left: 5px solid #dc3545;
+        }
+
+        .info-box {
+            background: #e8f4fd;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 5px solid #2196F3;
+        }
+
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #25D366;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 10px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            background: #4CAF50;
+            color: white;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            display: none;
+            z-index: 1000;
+        }
+
+        .steps {
+            margin: 25px 0;
+            padding-left: 20px;
+        }
+
+        .steps li {
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+            color: #666;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="notification" id="notification"></div>
+    
+    <div class="container">
+        <div class="header">
+            <div class="logo">📱</div>
+            <h1>WhatsApp Pair Code System</h1>
+            <p class="subtitle">Scan QR code and get notified when paired</p>
+        </div>
+
+        <div id="formContainer">
+            <div class="form-group">
+                <label for="phoneNumber">WhatsApp Phone Number:</label>
+                <input type="tel" id="phoneNumber" 
+                       placeholder="94769484004" 
+                       value="94769484004"
+                       required>
+                <small style="color: #666; font-size: 12px; display: block; margin-top: 5px;">
+                    Enter your WhatsApp number with country code
+                </small>
+            </div>
+
+            <div class="form-group">
+                <label for="email">Notification Email:</label>
+                <input type="email" id="email" 
+                       placeholder="prmox.asuka@gmail.com"
+                       value="prmox.asuka@gmail.com"
+                       required>
+            </div>
+
+            <div class="form-group">
+                <label for="name">Your Name (Optional):</label>
+                <input type="text" id="name" placeholder="Your Name">
+            </div>
+
+            <div class="info-box">
+                <strong>You will receive:</strong>
+                <ul style="margin-top: 10px; padding-left: 20px;">
+                    <li>Email confirmation when QR is ready</li>
+                    <li>Email + SMS when pairing is successful</li>
+                    <li>Real-time updates on this page</li>
+                </ul>
+            </div>
+
+            <button class="btn" id="startBtn" onclick="startPairing()">
+                Generate WhatsApp Pair Code
+            </button>
+        </div>
+
+        <div class="qr-container" id="qrContainer">
+            <h3>Scan this QR Code in WhatsApp</h3>
+            <div class="loader" id="qrLoader"></div>
+            <img id="qrCodeImage" src="" alt="QR Code" style="display: none;">
+            <p id="qrInstructions">
+                1. Open WhatsApp on your phone<br>
+                2. Tap Settings → Linked Devices<br>
+                3. Tap "Link a Device"<br>
+                4. Scan this QR code
+            </p>
+            <div class="status-container" id="statusContainer"></div>
+        </div>
+
+        <div class="steps">
+            <h3>How it works:</h3>
+            <ol>
+                <li>Enter your phone number and email</li>
+                <li>Click "Generate WhatsApp Pair Code"</li>
+                <li>Scan the QR code with WhatsApp</li>
+                <li>You'll get email/SMS when paired</li>
+                <li>WhatsApp Web/Desktop will be connected</li>
+            </ol>
+        </div>
+
+        <div class="footer">
+            <p>© 2024 WhatsApp Pair System | You'll receive notifications to your email and phone</p>
+            <p>Status: <span id="connectionStatus">Disconnected</span></p>
+        </div>
+    </div>
+
+    <script>
+        let socket = io();
+        let currentSessionId = null;
+
+        // Socket event handlers
+        socket.on('connect', () => {
+            console.log('Connected to server');
+            document.getElementById('connectionStatus').textContent = 'Connected';
+            document.getElementById('connectionStatus').style.color = '#25D366';
+        });
+
+        socket.on('qrCode', (data) => {
+            console.log('QR code received:', data);
+            
+            // Show QR container
+            document.getElementById('qrContainer').style.display = 'block';
+            document.getElementById('formContainer').style.display = 'none';
+            
+            // Hide loader and show QR image
+            document.getElementById('qrLoader').style.display = 'none';
+            document.getElementById('qrCodeImage').style.display = 'block';
+            document.getElementById('qrCodeImage').src = data.qrImage;
+            
+            // Show status
+            showStatus('Scan this QR code with WhatsApp to pair your device.', 'waiting');
+            
+            // Show notification
+            showNotification('QR code generated! Check your email for instructions.');
+        });
+
+        socket.on('pairingSuccess', (data) => {
+            console.log('Pairing successful:', data);
+            
+            showStatus(
+                `✅ WhatsApp successfully paired!<br>
+                Phone: ${data.phone}<br>
+                Time: ${new Date(data.timestamp).toLocaleString()}<br><br>
+                You should receive email and SMS notifications.`,
+                'success'
+            );
+            
+            showNotification('WhatsApp paired successfully! Check your email.');
+            
+            // Add reconnect button
+            setTimeout(() => {
+                const statusContainer = document.getElementById('statusContainer');
+                statusContainer.innerHTML += `
+                    <br>
+                    <button class="btn" onclick="restartProcess()" style="margin-top: 20px;">
+                        Pair Another Device
+                    </button>
+                `;
+            }, 2000);
+        });
+
+        socket.on('pairingError', (data) => {
+            console.error('Pairing error:', data);
+            showStatus(`Error: ${data.error}`, 'error');
+            showNotification('Pairing failed. Please try again.', 'error');
+        });
+
+        socket.on('disconnected', (data) => {
+            console.log('Disconnected:', data);
+            showStatus(`WhatsApp disconnected: ${data.reason}`, 'error');
+        });
+
+        function startPairing() {
+            const phone = document.getElementById('phoneNumber').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const name = document.getElementById('name').value.trim() || 'User';
+            
+            if (!phone || !email) {
+                showNotification('Please fill in all required fields', 'error');
+                return;
+            }
+            
+            // Disable button and show loading
+            const btn = document.getElementById('startBtn');
+            btn.disabled = true;
+            btn.innerHTML = 'Generating QR Code...';
+            
+            // Show QR container with loader
+            document.getElementById('qrContainer').style.display = 'block';
+            document.getElementById('formContainer').style.display = 'none';
+            document.getElementById('qrLoader').style.display = 'block';
+            document.getElementById('qrCodeImage').style.display = 'none';
+            
+            // Start pairing process
+            fetch('/api/start-pairing', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ phone, email, name })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.sessionId) {
+                    currentSessionId = data.sessionId;
+                    socket.emit('registerSession', currentSessionId);
+                    
+                    showStatus('Generating WhatsApp pairing QR code...', 'waiting');
+                    showNotification('Pairing process started. Please wait...');
+                } else if (data.error) {
+                    throw new Error(data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showStatus('Error: ' + error.message, 'error');
+                showNotification('Failed to start pairing', 'error');
+                
+                // Reset button
+                btn.disabled = false;
+                btn.innerHTML = 'Generate WhatsApp Pair Code';
+                
+                // Show form again
+                document.getElementById('formContainer').style.display = 'block';
+                document.getElementById('qrContainer').style.display = 'none';
+            });
+        }
+
+        function showStatus(message, type) {
+            const statusContainer = document.getElementById('statusContainer');
+            statusContainer.style.display = 'block';
+            statusContainer.className = 'status-container';
+            
+            switch(type) {
+                case 'success':
+                    statusContainer.classList.add('status-success');
+                    break;
+                case 'error':
+                    statusContainer.classList.add('status-error');
+                    break;
+                case 'waiting':
+                    statusContainer.classList.add('status-waiting');
+                    break;
+            }
+            
+            statusContainer.innerHTML = message;
+        }
+
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.style.background = type === 'error' ? '#f44336' : '#4CAF50';
+            notification.style.display = 'block';
+            
+            setTimeout(() => {
+                notification.style.display = 'none';
+            }, 5000);
+        }
+
+        function restartProcess() {
+            location.reload();
+        }
+
+        // Check server status on load
+        fetch('/api/status')
+            .then(response => response.json())
+            .then(data => {
+                console.log('Server status:', data);
+            })
+            .catch(error => {
+                console.error('Server connection error:', error);
+                document.getElementById('connectionStatus').textContent = 'Server Error';
+                document.getElementById('connectionStatus').style.color = '#f44336';
+            });
+    </script>
+</body>
+</html>
