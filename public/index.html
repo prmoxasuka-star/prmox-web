@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WhatsApp Pair Code Generator</title>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            width: 100%;
+            max-width: 500px;
+            padding: 40px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            color: #333;
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            color: #666;
+            font-size: 16px;
+        }
+        
+        .input-group {
+            margin-bottom: 25px;
+        }
+        
+        .input-group label {
+            display: block;
+            color: #333;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+        
+        .input-group input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        .input-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .phone-input {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .country-code {
+            flex: 0 0 80px;
+        }
+        
+        .phone-number {
+            flex: 1;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 16px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .qr-container {
+            text-align: center;
+            margin-top: 30px;
+            padding: 20px;
+            border-radius: 10px;
+            background: #f8f9fa;
+            display: none;
+        }
+        
+        #qrcode {
+            margin: 20px auto;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            display: inline-block;
+        }
+        
+        .instructions {
+            background: #e8f4ff;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            font-size: 14px;
+            color: #333;
+        }
+        
+        .instructions ol {
+            padding-left: 20px;
+            margin-top: 10px;
+        }
+        
+        .instructions li {
+            margin-bottom: 8px;
+        }
+        
+        .status {
+            text-align: center;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 20px;
+            display: none;
+            font-weight: 600;
+        }
+        
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        
+        .timer {
+            text-align: center;
+            color: #666;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+        
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+            }
+            
+            .header h1 {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔐 WhatsApp Pair Code</h1>
+            <p>Generate QR code to pair your WhatsApp account</p>
+        </div>
+        
+        <div class="input-group">
+            <label for="phoneNumber">Phone Number</label>
+            <div class="phone-input">
+                <input type="text" id="countryCode" class="country-code" value="+94" placeholder="Country Code">
+                <input type="tel" id="phoneNumber" class="phone-number" placeholder="77 123 4567">
+            </div>
+        </div>
+        
+        <button id="generateBtn" class="btn">Generate Pair Code</button>
+        
+        <div class="qr-container" id="qrContainer">
+            <h3>Scan QR Code</h3>
+            <div id="qrcode"></div>
+            <div class="timer">QR expires in: <span id="timer">05:00</span></div>
+            <div class="instructions">
+                <p><strong>Instructions:</strong></p>
+                <ol>
+                    <li>Open WhatsApp on your phone</li>
+                    <li>Go to Settings → Linked Devices</li>
+                    <li>Tap on "Link a Device"</li>
+                    <li>Scan the QR code above</li>
+                    <li>Wait for confirmation</li>
+                </ol>
+            </div>
+        </div>
+        
+        <div id="statusMessage" class="status"></div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
