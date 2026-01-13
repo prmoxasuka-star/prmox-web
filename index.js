@@ -1,248 +1,305 @@
-// index.js - Main entry point
+require('dotenv').config();
 const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
 const path = require('path');
-const { Boom } = require('@hapi/boom');
 const fs = require('fs');
-
-// Create necessary directories
-if (!fs.existsSync('./sessions')) {
-    fs.mkdirSync('./sessions');
-}
-
-if (!fs.existsSync('./public')) {
-    fs.mkdirSync('./public');
-}
+const cors = require('cors');
+const helmet = require('helmet');
 
 const app = express();
 const server = http.createServer(app);
-const io = socketIo(server);
+const io = socketIo(server, {
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"]
+  }
+});
 
 // Middleware
+app.use(helmet({
+  contentSecurityPolicy: false
+}));
+app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Import WhatsApp handler
-const { initializeWhatsApp, generatePairCode } = require('./whatsapp-handler');
+// Create directories
+const directories = ['sessions', 'public'];
+directories.forEach(dir => {
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+});
 
-// Store active sessions
-const activeSessions = new Map();
+// Store sessions
+const sessions = new Map();
+
+// Import WhatsApp handler
+const { initWhatsApp, generateQR } = require('./whatsapp');
 
 // Routes
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-app.get('/health', (req, res) => {
-    res.json({ 
-        status: 'online', 
-        timestamp: new Date().toISOString(),
-        sessions: activeSessions.size 
+app.get('/api', (req, res) => {
+  res.json({
+    name: 'WhatsApp Pair API',
+    version: '1.0.0',
+    endpoints: [
+      'POST /api/generate',
+      'GET /api/session/:id',
+      'GET /api/sessions',
+      'GET /api/health'
+    ]
+  });
+});
+
+app.get('/api/health', (req, res) => {
+  res.json({
+    status: 'OK',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    sessions: sessions.size
+  });
+});
+
+// Generate new pair code
+app.post('/api/generate', async (req, res) => {
+  try {
+    const { phone } = req.body;
+    
+    if (!phone) {
+      return res.status(400).json({
+        success: false,
+        message: 'Phone number is required'
+      });
+    }
+
+    // Clean phone number
+    const cleanPhone = phone.replace(/\D/g, '');
+    if (cleanPhone.length < 8) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid phone number'
+      });
+    }
+
+    const sessionId = `wa_${Date.now()}_${cleanPhone}`;
+    const fullNumber = `+${cleanPhone}`;
+
+    // Create session
+    sessions.set(sessionId, {
+      id: sessionId,
+      phone: fullNumber,
+      status: 'creating',
+      createdAt: new Date(),
+      qrCode: null,
+      connected: false,
+      user: null
     });
-});
 
-// API to generate pair code
-app.post('/api/generate-pair', async (req, res) => {
-    try {
-        const { phoneNumber, sessionName = 'default' } = req.body;
+    console.log(`Creating session: ${sessionId} for ${fullNumber}`);
+
+    // Generate QR in background
+    setTimeout(async () => {
+      try {
+        const qr = await generateQR(sessionId, fullNumber, io);
         
-        if (!phoneNumber) {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'Phone number is required' 
-            });
-        }
-
-        // Clean phone number
-        const cleanPhone = phoneNumber.replace(/\s+/g, '').replace('+', '');
-        
-        // Generate unique session ID
-        const sessionId = `session_${Date.now()}_${cleanPhone}`;
-        
-        // Store session info
-        activeSessions.set(sessionId, {
-            phoneNumber: `+${cleanPhone}`,
-            sessionName,
-            status: 'generating',
-            createdAt: new Date(),
-            lastUpdate: new Date()
-        });
-
-        // Generate pair code asynchronously
-        setTimeout(async () => {
-            try {
-                const qrCode = await generatePairCode(sessionId, `+${cleanPhone}`);
-                
-                if (activeSessions.has(sessionId)) {
-                    const session = activeSessions.get(sessionId);
-                    session.status = 'qr_ready';
-                    session.qrCode = qrCode;
-                    session.lastUpdate = new Date();
-                    
-                    // Emit QR code to connected clients
-                    io.emit('qr-update', {
-                        sessionId,
-                        qrCode,
-                        phoneNumber: `+${cleanPhone}`
-                    });
-                }
-            } catch (error) {
-                console.error('Error generating QR:', error);
-                if (activeSessions.has(sessionId)) {
-                    activeSessions.delete(sessionId);
-                }
-            }
-        }, 1000);
-
-        // Set session expiry (10 minutes)
-        setTimeout(() => {
-            if (activeSessions.has(sessionId) && activeSessions.get(sessionId).status !== 'paired') {
-                activeSessions.delete(sessionId);
-                io.emit('session-expired', { sessionId });
-            }
-        }, 10 * 60 * 1000);
-
-        res.json({
-            success: true,
+        if (sessions.has(sessionId)) {
+          const session = sessions.get(sessionId);
+          session.status = 'qr_ready';
+          session.qrCode = qr;
+          session.lastUpdate = new Date();
+          
+          console.log(`QR generated for ${fullNumber}`);
+          
+          // Emit to specific session room
+          io.to(sessionId).emit('qr_ready', {
             sessionId,
-            message: 'Pair code generation started',
-            expiresIn: '10 minutes'
-        });
-
-    } catch (error) {
-        console.error('API Error:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Internal server error'
-        });
-    }
-});
-
-// Check session status
-app.get('/api/session/:sessionId', (req, res) => {
-    const { sessionId } = req.params;
-    
-    if (!activeSessions.has(sessionId)) {
-        return res.status(404).json({
-            success: false,
-            message: 'Session not found'
-        });
-    }
-    
-    const session = activeSessions.get(sessionId);
-    
-    // Don't send full QR code in status check
-    const { qrCode, ...sessionInfo } = session;
-    
-    res.json({
-        success: true,
-        session: sessionInfo
-    });
-});
-
-// Get QR code for session
-app.get('/api/qr/:sessionId', (req, res) => {
-    const { sessionId } = req.params;
-    
-    if (!activeSessions.has(sessionId)) {
-        return res.status(404).json({
-            success: false,
-            message: 'Session not found'
-        });
-    }
-    
-    const session = activeSessions.get(sessionId);
-    
-    if (session.status !== 'qr_ready') {
-        return res.json({
-            success: false,
-            message: 'QR code not ready yet',
-            status: session.status
-        });
-    }
-    
-    res.json({
-        success: true,
-        qrCode: session.qrCode,
-        phoneNumber: session.phoneNumber
-    });
-});
-
-// List all active sessions
-app.get('/api/sessions', (req, res) => {
-    const sessions = Array.from(activeSessions.entries()).map(([id, session]) => ({
-        sessionId: id,
-        phoneNumber: session.phoneNumber,
-        status: session.status,
-        createdAt: session.createdAt,
-        lastUpdate: session.lastUpdate
-    }));
-    
-    res.json({
-        success: true,
-        count: sessions.length,
-        sessions
-    });
-});
-
-// Cleanup expired sessions
-app.post('/api/cleanup', (req, res) => {
-    const now = Date.now();
-    let cleaned = 0;
-    
-    for (const [sessionId, session] of activeSessions.entries()) {
-        const sessionAge = now - new Date(session.lastUpdate).getTime();
-        
-        if (sessionAge > 10 * 60 * 1000) { // Older than 10 minutes
-            activeSessions.delete(sessionId);
-            cleaned++;
+            qr,
+            phone: fullNumber
+          });
         }
-    }
-    
+      } catch (error) {
+        console.error('QR generation failed:', error);
+        if (sessions.has(sessionId)) {
+          sessions.delete(sessionId);
+          io.to(sessionId).emit('error', {
+            sessionId,
+            message: 'Failed to generate QR'
+          });
+        }
+      }
+    }, 1000);
+
+    // Auto-cleanup after 5 minutes
+    setTimeout(() => {
+      if (sessions.has(sessionId) && !sessions.get(sessionId).connected) {
+        sessions.delete(sessionId);
+        io.to(sessionId).emit('session_expired', { sessionId });
+        console.log(`Session expired: ${sessionId}`);
+      }
+    }, 5 * 60 * 1000);
+
     res.json({
-        success: true,
-        message: `Cleaned ${cleaned} expired sessions`
+      success: true,
+      sessionId,
+      phone: fullNumber,
+      message: 'QR generation started. Connect to socket with sessionId.',
+      socketEvent: 'join_session'
     });
+
+  } catch (error) {
+    console.error('Generate error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
 });
 
-// Socket.io connection
+// Get session status
+app.get('/api/session/:id', (req, res) => {
+  const { id } = req.params;
+  
+  if (!sessions.has(id)) {
+    return res.status(404).json({
+      success: false,
+      message: 'Session not found'
+    });
+  }
+  
+  const session = sessions.get(id);
+  res.json({
+    success: true,
+    session: {
+      id: session.id,
+      phone: session.phone,
+      status: session.status,
+      connected: session.connected,
+      createdAt: session.createdAt,
+      lastUpdate: session.lastUpdate
+    }
+  });
+});
+
+// List all sessions
+app.get('/api/sessions', (req, res) => {
+  const sessionList = Array.from(sessions.values()).map(s => ({
+    id: s.id,
+    phone: s.phone,
+    status: s.status,
+    connected: s.connected,
+    createdAt: s.createdAt
+  }));
+  
+  res.json({
+    success: true,
+    count: sessionList.length,
+    sessions: sessionList
+  });
+});
+
+// Socket.io
 io.on('connection', (socket) => {
-    console.log(`Client connected: ${socket.id}`);
+  console.log('Client connected:', socket.id);
+  
+  socket.emit('connected', {
+    message: 'Connected to WhatsApp Pair Server',
+    socketId: socket.id
+  });
+  
+  socket.on('join_session', (data) => {
+    const { sessionId } = data;
     
-    socket.emit('connected', { 
-        message: 'Connected to WhatsApp Pair Server',
-        serverTime: new Date().toISOString()
-    });
-    
-    socket.on('join-session', (sessionId) => {
-        socket.join(sessionId);
-        console.log(`Client ${socket.id} joined session ${sessionId}`);
-    });
-    
-    socket.on('disconnect', () => {
-        console.log(`Client disconnected: ${socket.id}`);
-    });
+    if (sessions.has(sessionId)) {
+      socket.join(sessionId);
+      console.log(`Socket ${socket.id} joined session ${sessionId}`);
+      
+      const session = sessions.get(sessionId);
+      
+      // Send current status
+      socket.emit('session_update', {
+        sessionId,
+        status: session.status,
+        phone: session.phone,
+        connected: session.connected
+      });
+      
+      // If QR is already ready, send it
+      if (session.status === 'qr_ready' && session.qrCode) {
+        socket.emit('qr_ready', {
+          sessionId,
+          qr: session.qrCode,
+          phone: session.phone
+        });
+      }
+    } else {
+      socket.emit('error', {
+        message: 'Session not found'
+      });
+    }
+  });
+  
+  socket.on('disconnect', () => {
+    console.log('Client disconnected:', socket.id);
+  });
 });
 
 // Initialize WhatsApp
-initializeWhatsApp(io, activeSessions);
+initWhatsApp(io, sessions);
 
-// Error handling middleware
+// Cleanup interval
+setInterval(() => {
+  const now = Date.now();
+  let cleaned = 0;
+  
+  for (const [sessionId, session] of sessions.entries()) {
+    const sessionAge = now - new Date(session.createdAt).getTime();
+    
+    // Remove sessions older than 10 minutes
+    if (sessionAge > 10 * 60 * 1000) {
+      sessions.delete(sessionId);
+      cleaned++;
+      console.log(`Cleaned expired session: ${sessionId}`);
+    }
+  }
+  
+  if (cleaned > 0) {
+    console.log(`Cleaned ${cleaned} expired sessions`);
+  }
+}, 60 * 1000);
+
+// Error handling
 app.use((err, req, res, next) => {
-    console.error('Unhandled error:', err);
-    res.status(500).json({
-        success: false,
-        message: 'Something went wrong!'
-    });
+  console.error(err.stack);
+  res.status(500).json({
+    success: false,
+    message: 'Something went wrong!'
+  });
+});
+
+// 404 handler
+app.use((req, res) => {
+  res.status(404).json({
+    success: false,
+    message: 'Endpoint not found'
+  });
 });
 
 // Start server
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-    console.log(`🚀 Server running on port ${PORT}`);
-    console.log(`📱 WhatsApp Pair Code Generator`);
-    console.log(`🌐 Web Interface: http://localhost:${PORT}`);
-    console.log(`📊 API Health: http://localhost:${PORT}/health`);
+  console.log(`
+  🚀 WhatsApp Pair Server Started!
+  📍 Port: ${PORT}
+  🌐 Web: http://localhost:${PORT}
+  📱 API: http://localhost:${PORT}/api
+  🔗 Health: http://localhost:${PORT}/api/health
+  
+  ⚠️  Note: This is for development only!
+  `);
 });
