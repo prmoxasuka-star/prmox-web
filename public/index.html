@@ -3,95 +3,58 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WhatsApp Pair Code Generator</title>
-    <link rel="stylesheet" href="style.css">
-    <script src="/socket.io/socket.io.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+    <title>Prmox Pair Code Generator</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background-color: #f0f2f5; }
+        .container { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); text-align: center; width: 90%; max-width: 400px; }
+        h2 { color: #25D366; margin-bottom: 20px; }
+        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
+        button { width: 100%; padding: 12px; background-color: #25D366; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold; }
+        button:hover { background-color: #128C7E; }
+        #result { margin-top: 20px; font-size: 24px; font-weight: bold; letter-spacing: 5px; color: #333; }
+        .loading { color: #666; font-size: 14px; margin-top: 10px; }
+    </style>
 </head>
 <body>
     <div class="container">
-        <div class="header">
-            <h1>📱 WhatsApp Pair Code</h1>
-            <p class="subtitle">Generate QR code to link WhatsApp Web</p>
-        </div>
-        
-        <div class="card">
-            <div class="input-section">
-                <label for="phoneInput">Enter Phone Number</label>
-                <div class="phone-input">
-                    <select id="countryCode">
-                        <option value="+94">🇱🇰 +94 (Sri Lanka)</option>
-                        <option value="+91">🇮🇳 +91 (India)</option>
-                        <option value="+1">🇺🇸 +1 (USA)</option>
-                        <option value="+44">🇬🇧 +44 (UK)</option>
-                        <option value="+971">🇦🇪 +971 (UAE)</option>
-                        <option value="+65">🇸🇬 +65 (Singapore)</option>
-                        <option value="+60">🇲🇾 +60 (Malaysia)</option>
-                    </select>
-                    <input 
-                        type="tel" 
-                        id="phoneInput" 
-                        placeholder="77 123 4567"
-                        autocomplete="off"
-                    >
-                </div>
-                <button id="generateBtn" class="btn-primary">
-                    Generate QR Code
-                </button>
-            </div>
-            
-            <div id="statusSection" class="hidden">
-                <div class="status-header">
-                    <h3>Status: <span id="statusText">Waiting...</span></h3>
-                    <div class="timer">Expires in: <span id="timer">05:00</span></div>
-                </div>
-                
-                <div id="qrContainer" class="hidden">
-                    <div id="qrcode"></div>
-                    <p class="qr-instruction">Scan with WhatsApp → Linked Devices</p>
-                </div>
-                
-                <div id="sessionInfo" class="hidden">
-                    <div class="info-card">
-                        <h4>Session Information</h4>
-                        <p>Phone: <span id="sessionPhone"></span></p>
-                        <p>Session ID: <span id="sessionId"></span></p>
-                        <p>Status: <span id="connectionStatus">Disconnected</span></p>
-                    </div>
-                </div>
-            </div>
-            
-            <div id="successMessage" class="hidden">
-                <div class="success-card">
-                    <div class="success-icon">✅</div>
-                    <h3>Successfully Paired!</h3>
-                    <p>Your WhatsApp is now connected.</p>
-                    <button id="newSessionBtn" class="btn-secondary">
-                        Start New Session
-                    </button>
-                </div>
-            </div>
-            
-            <div class="instructions">
-                <h4>How to use:</h4>
-                <ol>
-                    <li>Enter phone number (with country code)</li>
-                    <li>Click "Generate QR Code"</li>
-                    <li>Open WhatsApp on your phone</li>
-                    <li>Go to Settings → Linked Devices → Link a Device</li>
-                    <li>Scan the QR code</li>
-                    <li>Wait for confirmation</li>
-                </ol>
-                <p class="note">⚠️ QR code expires in 5 minutes. Each session is temporary.</p>
-            </div>
-        </div>
-        
-        <div class="footer">
-            <p>WhatsApp Pair Code Generator v1.0</p>
-            <p class="warning">For personal use only. Respect WhatsApp's Terms of Service.</p>
-        </div>
+        <h2>WhatsApp Pair Code</h2>
+        <p>Enter number with country code (e.g. 947xxxxxxxx)</p>
+        <input type="text" id="phone" placeholder="94712345678">
+        <button onclick="getCode()">GET PAIRING CODE</button>
+        <div id="loading" class="loading" style="display:none;">Connecting to WhatsApp...</div>
+        <div id="result"></div>
     </div>
-    
-    <script src="script.js"></script>
+
+    <script>
+        async function getCode() {
+            const phone = document.getElementById('phone').value;
+            const resultDiv = document.getElementById('result');
+            const loadingDiv = document.getElementById('loading');
+
+            if (!phone) {
+                alert("Please enter a phone number!");
+                return;
+            }
+
+            resultDiv.innerText = "";
+            loadingDiv.style.display = "block";
+
+            try {
+                const response = await fetch(`/.netlify/functions/index/pair?phone=${phone}`);
+                const data = await response.json();
+                
+                loadingDiv.style.display = "none";
+                if (data.code) {
+                    resultDiv.innerText = data.code;
+                } else {
+                    resultDiv.innerText = "Error!";
+                    console.log(data.error);
+                }
+            } catch (error) {
+                loadingDiv.style.display = "none";
+                resultDiv.innerText = "Failed!";
+            }
+        }
+    </script>
 </body>
 </html>
