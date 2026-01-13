@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prmox Code Generator</title>
+    <style>
+        body { font-family: sans-serif; background: #f0f2f5; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .box { background: #fff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); text-align: center; width: 320px; }
+        h2 { color: #075e54; margin-bottom: 20px; }
+        input { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; margin-bottom: 15px; font-size: 16px; }
+        button { width: 100%; padding: 12px; background: #25d366; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; }
+        #loading { display: none; margin-top: 15px; color: #666; font-size: 14px; }
+        #code-display { margin-top: 20px; font-size: 32px; font-weight: bold; color: #128c7e; letter-spacing: 4px; border: 2px dashed #25d366; padding: 10px; display: none; }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <h2>Prmox Pair Code</h2>
+        <input type="text" id="phone" placeholder="947xxxxxxxx">
+        <button onclick="getCode()">Get Code</button>
+        <div id="loading">Generating code... Please wait.</div>
+        <div id="code-display"></div>
+    </div>
+
+    <script>
+        async function getCode() {
+            const phone = document.getElementById('phone').value;
+            const loader = document.getElementById('loading');
+            const display = document.getElementById('code-display');
+
+            if(!phone) return alert("Please enter number!");
+
+            loader.style.display = "block";
+            display.style.display = "none";
+
+            try {
+                const response = await fetch('/pair?phone=' + phone);
+                const data = await response.json();
+                loader.style.display = "none";
+
+                if(data.code) {
+                    display.innerText = data.code;
+                    display.style.display = "block";
+                } else {
+                    alert("Error: " + data.error);
+                }
+            } catch (err) {
+                loader.style.display = "none";
+                alert("Server Error!");
+            }
+        }
+    </script>
+</body>
+</html>
