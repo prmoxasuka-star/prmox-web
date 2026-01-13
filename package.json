@@ -1,17 +1,16 @@
 {
-  "name": "prmox-pair-code-gen",
+  "name": "prmox-pair-generator",
   "version": "1.0.0",
-  "description": "WhatsApp Pairing Code Generator for Prmox Bot",
-  "main": "functions/index.js",
+  "description": "WhatsApp Pairing Code Generator for Koyeb",
+  "main": "index.js",
   "scripts": {
-    "start": "node functions/index.js"
+    "start": "node index.js"
   },
   "dependencies": {
     "@whiskeysockets/baileys": "^6.6.0",
     "express": "^4.18.2",
     "pino": "^8.14.1",
-    "serverless-http": "^3.2.0",
-    "qrcode-terminal": "^0.12.0"
+    "path": "^0.12.7"
   },
   "engines": {
     "node": ">=18.0.0"
