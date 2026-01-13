@@ -6,17 +6,21 @@
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "clean": "rm -rf sessions/*",
+    "test": "echo \"No tests yet\" && exit 0"
   },
-  "keywords": ["whatsapp", "qr", "pair", "baileys", "whatsapp-web"],
-  "author": "Your Name",
+  "keywords": ["whatsapp", "qr", "pair", "baileys"],
+  "author": "You",
   "license": "MIT",
   "dependencies": {
     "express": "^4.18.2",
     "socket.io": "^4.7.2",
     "@whiskeysockets/baileys": "^6.4.0",
+    "qrcode": "^1.5.3",
     "pino": "^8.15.0",
-    "@hapi/boom": "^10.0.1"
+    "dotenv": "^16.3.1",
+    "cors": "^2.8.5",
+    "helmet": "^7.0.0"
   },
   "devDependencies": {
     "nodemon": "^3.0.1"
